@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crypto Analysis Signals</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Arial", sans-serif;
+      background-color: #121212;
+      color: #ffffff;
+      padding: 20px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      color: #fcd535;
+    }
+
+    .container {
+      margin: 20px auto;
+      max-width: 800px;
+      padding: 20px;
+      background: #ffffff;
+      color: #121212;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .admin-interface input,
+    .admin-interface textarea {
+      width: 100%;
+      margin-bottom: 15px;
+      padding: 10px;
+      font-size: 14px;
+      border: 1px solid #dddddd;
+      border-radius: 5px;
+    }
+
+    .admin-interface input[type="file"] {
+      padding: 5px;
+    }
+
+    .admin-interface button {
+      background-color: #fcd535;
+      color: #121212;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 5px;
+      font-weight: bold;
+    }
+
+    .admin-interface button:hover {
+      background-color: #e5b930;
+    }
+
+    .signals-container {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .signal-item {
+      padding: 15px;
+      border: 1px solid #dddddd;
+      border-radius: 5px;
+      background: #ffffff;
+      color: #121212;
+    }
+
+    .signal-item h2 {
+      font-size: 18px;
+      color: #fcd535;
+    }
+
+    .signal-item img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 5px;
+      margin-bottom: 10px;
+    }
+
+    .signal-item p {
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Crypto Analysis Signals</h1>
+  </div>
+
+  <!-- Admin Interface -->
+  <div class="container admin-interface" id="adminInterface" style="display: none;">
+    <h2>Admin: Add Signal</h2>
+    <input type="text" id="newSignalTitle" placeholder="Signal Title">
+    <textarea id="newSignalText" placeholder="Enter signal details"></textarea>
+    <input type="file" id="newSignalImage" accept="image/*">
+    <button onclick="uploadSignal()">Upload Signal</button>
+  </div>
+
+  <!-- Customer Interface -->
+  <div class="container customer-interface" id="customerInterface" style="display: none;">
+    <h2>Customer: View Signals</h2>
+    <div class="signals-container" id="signalsContainer">
+      <!-- Signals will be dynamically added here -->
+    </div>
+  </div>
+
+  <script>
+    const adminCode = "1234"; // Admin secret code
+    const userCode = prompt("Enter the admin code (or cancel for customer access):");
+
+    if (userCode === adminCode) {
+      document.getElementById("adminInterface").style.display = "block";
+    } else {
+      document.getElementById("customerInterface").style.display = "block";
+
+      // Request notification permission
+      if (Notification.permission !== "granted") {
+        Notification.requestPermission().then(permission => {
+          if (permission !== "granted") {
+            console.log("Notifications not granted.");
+          }
+        });
+      }
+    }
+
+    // Function to upload a signal (Admin functionality)
+    function uploadSignal() {
+      const title = document.getElementById("newSignalTitle").value.trim();
+      const text = document.getElementById("newSignalText").value.trim();
+      const imageInput = document.getElementById("newSignalImage");
+      const imageFile = imageInput.files[0];
+
+      if (!title || !text) {
+        alert("Please provide both title and description.");
+        return;
+      }
+
+      const signal = {
+        title,
+        text,
+        image: imageFile ? URL.createObjectURL(imageFile) : null
+      };
+
+      // Save signal to localStorage
+      const existingSignals = JSON.parse(localStorage.getItem("signals")) || [];
+      existingSignals.push(signal);
+      localStorage.setItem("signals", JSON.stringify(existingSignals));
+
+      alert("Signal uploaded successfully!");
+      document.getElementById("newSignalTitle").value = "";
+      document.getElementById("newSignalText").value = "";
+      imageInput.value = "";
+
+      displaySignals(); // Refresh signals for customers
+      notifyCustomers(signal.title); // Notify customers
+    }
+
+    // Function to display signals (Customer functionality)
+    function displaySignals() {
+      const signalsContainer = document.getElementById("signalsContainer");
+      const signals = JSON.parse(localStorage.getItem("signals")) || [];
+
+      signalsContainer.innerHTML = "";
+
+      signals.forEach((signal) => {
+        const signalElement = document.createElement("div");
+        signalElement.classList.add("signal-item");
+
+        signalElement.innerHTML = `
+          <h2>${signal.title}</h2>
+          ${signal.image ? `<img src="${signal.image}" alt="${signal.title}">` : ""}
+          <p>${signal.text}</p>
+        `;
+
+        signalsContainer.appendChild(signalElement);
+      });
+    }
+
+    // Function to notify customers about new signals
+    function notifyCustomers(title) {
+      if (Notification.permission === "granted") {
+        new Notification("New Signal Uploaded", {
+          body: `Admin has uploaded a new signal: ${title}`,
+          icon: "https://via.placeholder.com/128" // Replace with your icon URL
+        });
+      }
+    }
+
+    // Load signals on page load
+    window.onload = displaySignals;
+  </script>
+</body>
+</html>
